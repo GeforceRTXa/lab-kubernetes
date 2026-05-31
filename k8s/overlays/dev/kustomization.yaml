@@ -1,0 +1,34 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: messager
+
+commonLabels:
+  environment: dev
+
+resources:
+  - ../../base
+
+# Dev: используем latest теги (уже заданы в base, ничего не меняем)
+
+patches:
+  # Dev: хост dev.messager.local
+  - patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: dev.messager.local
+    target:
+      kind: Ingress
+      name: messager-ingress
+
+  # Dev: 1 реплика (явно фиксируем)
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+    target:
+      kind: Deployment
+      labelSelector: "app.kubernetes.io/part-of=messager"
+
+  # Dev: сниженные лимиты ресурсов для frontend
+  - path: patches/frontend-resources.yaml

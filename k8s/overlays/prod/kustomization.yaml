@@ -1,0 +1,64 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: messager
+
+commonLabels:
+  environment: prod
+
+resources:
+  - ../../base
+
+# Prod: фиксированные теги образов (не latest!)
+images:
+  - name: mablinov2704/frontend
+    newTag: "1.0.0"
+  - name: mablinov2704/bff
+    newTag: "1.0.0"
+  - name: mablinov2704/user-service
+    newTag: "1.0.0"
+  - name: mablinov2704/message-service
+    newTag: "1.0.0"
+
+patches:
+  # Prod: хост prod.messager.example.com
+  - patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: prod.messager.example.com
+    target:
+      kind: Ingress
+      name: messager-ingress
+
+  # Prod: 2 реплики для прикладных сервисов
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+    target:
+      kind: Deployment
+      name: frontend
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+    target:
+      kind: Deployment
+      name: bff
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+    target:
+      kind: Deployment
+      name: user-service
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+    target:
+      kind: Deployment
+      name: message-service
+
+  # Prod: повышенные ресурсы
+  - path: patches/resources-prod.yaml

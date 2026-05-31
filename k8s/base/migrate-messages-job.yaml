@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate-messages
+  namespace: messager
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 120
+  template:
+    spec:
+      restartPolicy: Never
+      initContainers:
+        - name: wait-postgres
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - until nc -z postgres 5432; do echo "waiting for postgres..."; sleep 3; done
+      containers:
+        - name: migrate-messages
+          image: ghcr.io/kukymbr/goose-docker:latest
+          env:
+            - name: GOOSE_DRIVER
+              value: postgres
+            - name: GOOSE_DBSTRING
+              valueFrom:
+                secretKeyRef:
+                  name: messager-db-secret
+                  key: MSG_DB_DSN
+            - name: GOOSE_MIGRATION_DIR
+              value: /migrations

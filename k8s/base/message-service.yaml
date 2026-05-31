@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: message-service
+  namespace: messager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: message-service
+  template:
+    metadata:
+      labels:
+        app: message-service
+    spec:
+      affinity:
+        nodeAffinity:
+          # HARD: только на workload=app
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: workload
+                    operator: In
+                    values:
+                      - app
+          # SOFT: предпочтительно disk=fast
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: disk
+                    operator: In
+                    values:
+                      - fast
+      containers:
+        - name: message-service
+          image: mablinov2704/message-service:latest
+          ports:
+            - containerPort: 8082
+          env:
+            - name: HTTP_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: messager-config
+                  key: MSG_HTTP_PORT
+            - name: DB_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: messager-db-secret
+                  key: MSG_DB_DSN
+            - name: UPLOADS_DIR
+              valueFrom:
+                configMapKeyRef:
+                  name: messager-config
+                  key: MSG_UPLOADS_DIR
+          volumeMounts:
+            - name: uploads
+              mountPath: /app/uploads
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8082
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8082
+            initialDelaySeconds: 15
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: "150m"
+              memory: "192Mi"
+            limits:
+              cpu: "300m"
+              memory: "384Mi"
+      volumes:
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: message-uploads-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: message-service
+  namespace: messager
+spec:
+  selector:
+    app: message-service
+  ports:
+    - name: http
+      port: 8082
+      targetPort: 8082
