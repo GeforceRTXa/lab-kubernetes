@@ -36,21 +36,6 @@ docs/
 └── README.md                      ← этот файл
 ```
 
----
-
-## Различия dev vs prod
-
-| Параметр         | dev                    | prod                      |
-|------------------|------------------------|---------------------------|
-| Реплики          | 1                      | 2 для всех сервисов       |
-| Теги образов     | latest                 | 1.0.0 (фиксированный)     |
-| Ingress host     | dev.messager.local     | prod.messager.example.com |
-| CPU limit bff    | 300m                   | 500m                      |
-| Memory limit bff | 384Mi                  | 512Mi                     |
-| Ресурсы frontend | 50m/64Mi → 100m/128Mi  | 150m/192Mi → 300m/384Mi   |
-
----
-
 ## Порты сервисов
 
 | Сервис          | Порт |
@@ -62,22 +47,6 @@ docs/
 | postgres        | 5432 |
 | minio (S3 API)  | 9000 |
 | minio (console) | 9001 |
-
----
-
-## nodeAffinity — где живут поды
-
-| Сервис          | Тип ноды       | Правило               |
-|-----------------|----------------|-----------------------|
-| postgres        | workload=system| hard (required)       |
-| minio           | workload=system| hard (required)       |
-| frontend        | workload=app   | hard (required)       |
-| bff             | workload=app   | hard (required)       |
-| user-service    | workload=app   | hard (required)       |
-| message-service | workload=app   | hard (required)       |
-| message-service | disk=fast      | soft (preferred w=100)|
-
----
 
 ## Пошаговый запуск
 
@@ -103,8 +72,7 @@ minikube version
 minikube start --driver=docker --cpus=4 --memory=6g
 
 # Пометить единственную ноду обоими лейблами (в minikube нода одна)
-kubectl label node minikube workload=app
-kubectl label node minikube workload=system
+kubectl label node minikube workload=app --overwrite
 kubectl label node minikube disk=fast
 
 # Включить ingress
@@ -114,8 +82,13 @@ minikube addons enable ingress
 ### 3. Установить CSI S3 драйвер
 
 ```bash
-kubectl apply -k "github.com/ctrox/csi-s3/deploy/kubernetes?ref=master"
-# Подождать пока поднимется
+cd ~
+git clone https://github.com/yandex-cloud/k8s-csi-s3.git
+cd k8s-csi-s3/deploy/kubernetes
+kubectl apply -f provisioner.yaml
+kubectl apply -f driver.yaml
+kubectl apply -f csi-s3.yaml
+
 kubectl wait --for=condition=ready pod -l app=csi-s3 -n kube-system --timeout=120s
 ```
 
@@ -125,6 +98,7 @@ MinIO нужно сначала задеплоить, потом создать 
 
 ```bash
 # Применить только minio сначала
+# Тут нужно вернуться обратно в репу + подождать, когда под запустится
 kubectl apply -f k8s/base/namespace.yaml
 kubectl apply -f k8s/base/secret.yaml
 kubectl apply -f k8s/base/minio.yaml
@@ -143,9 +117,9 @@ mc mb local/uploads
 ### 5. Запушить в GitHub и задеплоить через Argo CD
 
 ```bash
-# В argocd/application-dev.yaml замени:
-# YOUR_GITHUB_USERNAME — твой логин
-# YOUR_REPO_NAME — имя репозитория
+# В argocd/application-dev.yaml заменить:
+# YOUR_GITHUB_USERNAME — логин (Потенциально может быть мой логин - поменять)
+# YOUR_REPO_NAME — имя репозитория (Потенциально моя репа - поменять)
 
 # Установить Argo CD
 kubectl create namespace argocd
@@ -179,7 +153,7 @@ echo "192.168.49.2 dev.messager.local" | sudo tee -a /etc/hosts
 
 ---
 
-## Проверка перед сдачей
+## Проверка
 
 ```bash
 # 1. Проверить сборку overlays
@@ -204,21 +178,3 @@ kubectl get application -n argocd
 - postgres, minio, frontend, bff, user-service, message-service → `Running`
 - migrate-users, migrate-messages → `Completed`
 - Argo CD → `Synced / Healthy`
-
----
-
-## Troubleshooting
-
-```bash
-# Pod не стартует — смотрим события
-kubectl describe pod -n messager <pod-name>
-
-# Логи
-kubectl logs -n messager deployment/message-service
-
-# nodeAffinity не работает — проверить лейблы
-kubectl get node minikube --show-labels
-
-# Argo CD не синхронизирует — ручная синхронизация
-kubectl -n argocd exec deployment/argocd-server -- argocd app sync messager-dev --insecure
-```
