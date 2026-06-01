@@ -16,11 +16,15 @@ spec:
             - sh
             - -c
             - until nc -z postgres 5432; do echo "waiting..."; sleep 3; done
+        - name: copy-migrations
+          image: mablinov2704/message-service:latest
+          command: ["cp", "-r", "/app/migrations/.", "/migrations/"]
+          volumeMounts:
+            - name: migrations
+              mountPath: /migrations
       containers:
         - name: migrate-messages
-          image: mablinov2704/message-service:latest
-          command: ["/bin/sh", "-c"]
-          args: ["goose -dir /app/migrations postgres \"$GOOSE_DBSTRING\" up"]
+          image: ghcr.io/kukymbr/goose-docker:latest
           env:
             - name: GOOSE_DRIVER
               value: postgres
@@ -30,4 +34,10 @@ spec:
                   name: messager-db-secret
                   key: MSG_DB_DSN
             - name: GOOSE_MIGRATION_DIR
-              value: /app/migrations
+              value: /migrations
+          volumeMounts:
+            - name: migrations
+              mountPath: /migrations
+      volumes:
+        - name: migrations
+          emptyDir: {}
