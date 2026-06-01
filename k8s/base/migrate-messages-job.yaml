@@ -25,6 +25,8 @@ spec:
       containers:
         - name: migrate-messages
           image: ghcr.io/kukymbr/goose-docker:latest
+          command: ["/bin/goose"]
+          args: ["-dir", "/migrations", "postgres", "$(GOOSE_DBSTRING)", "up"]
           env:
             - name: GOOSE_DRIVER
               value: postgres
