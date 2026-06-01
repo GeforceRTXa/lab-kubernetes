@@ -18,6 +18,7 @@ spec:
     volumeAttributes:
       bucketName: uploads
       mounter: geesefs
+      endpoint: "http://minio.messager.svc.cluster.local:9000"
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
