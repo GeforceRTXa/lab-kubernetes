@@ -56,18 +56,6 @@ spec:
           volumeMounts:
             - name: uploads
               mountPath: /app/uploads
-          readinessProbe:
-            httpGet:
-              path: /health
-              port: 8082
-            initialDelaySeconds: 5
-            periodSeconds: 5
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: 8082
-            initialDelaySeconds: 15
-            periodSeconds: 15
           resources:
             requests:
               cpu: "150m"

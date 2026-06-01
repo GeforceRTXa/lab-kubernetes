@@ -43,18 +43,6 @@ spec:
                 configMapKeyRef:
                   name: messager-config
                   key: MSG_SERVICE_URL
-          readinessProbe:
-            httpGet:
-              path: /health
-              port: 8080
-            initialDelaySeconds: 5
-            periodSeconds: 5
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: 8080
-            initialDelaySeconds: 15
-            periodSeconds: 15
           resources:
             requests:
               cpu: "150m"

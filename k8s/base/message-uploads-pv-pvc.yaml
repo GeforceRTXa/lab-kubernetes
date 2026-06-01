@@ -8,11 +8,7 @@ spec:
   accessModes:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
-  mountOptions:
-    - allow-delete
-    - region=us-east-1
-    - url=http://minio.messager.svc.cluster.local:9000
-    - use_path_request_style
+  storageClassName: csi-s3
   csi:
     driver: ru.yandex.s3.csi
     volumeHandle: messager-uploads-volume
@@ -31,6 +27,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteMany
+  storageClassName: csi-s3
   resources:
     requests:
       storage: 10Gi

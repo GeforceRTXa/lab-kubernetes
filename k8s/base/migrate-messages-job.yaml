@@ -15,10 +15,12 @@ spec:
           command:
             - sh
             - -c
-            - until nc -z postgres 5432; do echo "waiting for postgres..."; sleep 3; done
+            - until nc -z postgres 5432; do echo "waiting..."; sleep 3; done
       containers:
         - name: migrate-messages
-          image: ghcr.io/kukymbr/goose-docker:latest
+          image: mablinov2704/message-service:latest
+          command: ["/bin/sh", "-c"]
+          args: ["goose -dir /app/migrations postgres \"$GOOSE_DBSTRING\" up"]
           env:
             - name: GOOSE_DRIVER
               value: postgres
@@ -28,4 +30,4 @@ spec:
                   name: messager-db-secret
                   key: MSG_DB_DSN
             - name: GOOSE_MIGRATION_DIR
-              value: /migrations
+              value: /app/migrations
