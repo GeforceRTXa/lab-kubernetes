@@ -15,6 +15,9 @@ spec:
     nodePublishSecretRef:
       name: csi-s3-secret
       namespace: messager
+    nodeStageSecretRef:
+      name: csi-s3-secret
+      namespace: messager
     volumeAttributes:
       bucketName: uploads
       mounter: geesefs
