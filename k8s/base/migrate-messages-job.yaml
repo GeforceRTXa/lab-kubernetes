@@ -24,7 +24,7 @@ spec:
               mountPath: /migrations
       containers:
         - name: migrate-messages
-          image: ghcr.io/kukymbr/goose-docker:latest
+          image: ghcr.io/kukymbr/goose-docker:3.24.2
           env:
             - name: GOOSE_DRIVER
               value: postgres
@@ -35,8 +35,6 @@ spec:
                   key: MSG_DB_DSN
             - name: GOOSE_MIGRATION_DIR
               value: /migrations
-            - name: GOOSE_COMMAND
-              value: up
           volumeMounts:
             - name: migrations
               mountPath: /migrations
