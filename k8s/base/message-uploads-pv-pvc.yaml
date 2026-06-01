@@ -14,14 +14,14 @@ spec:
     volumeHandle: messager-uploads-volume
     nodePublishSecretRef:
       name: csi-s3-secret
-      namespace: messager
+      namespace: kube-system
     nodeStageSecretRef:
       name: csi-s3-secret
-      namespace: messager
+      namespace: kube-system
     volumeAttributes:
       bucketName: uploads
       mounter: geesefs
-      endpoint: "http://minio.messager.svc.cluster.local:9000"
+      options: "--memory-limit 1000 --dir-mode 0777 --file-mode 0666 --no-systemd"
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
